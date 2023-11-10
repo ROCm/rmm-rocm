@@ -175,6 +175,10 @@ fi
 
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
-    echo "building and installing rmm..."
-    SKBUILD_CONFIGURE_OPTIONS="${SKBUILD_EXTRA_CMAKE_ARGS}" python -m pip install --no-build-isolation --no-deps ${REPODIR}/python
+    #: echo "building and installing rmm..."
+    #: SKBUILD_CONFIGURE_OPTIONS="${SKBUILD_EXTRA_CMAKE_ARGS}" python -m pip install --no-build-isolation --no-deps ${REPODIR}/python
+    echo "building rmm package wheel..."
+    cd ${REPODIR}/python
+    SKBUILD_CONFIGURE_OPTIONS="${SKBUILD_EXTRA_CMAKE_ARGS}" CXX="hipcc" python3 setup.py bdist_wheel
+    echo "RMM package wheel (install via pip): $(ls ${REPODIR}/python/dist/*whl)"
 fi
