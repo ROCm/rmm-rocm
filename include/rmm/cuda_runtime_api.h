@@ -27,6 +27,7 @@
 #define CUDART_VERSION 0
 
 // types
+// NOTE: Redefining using statements does not cause any errors.
 using cudaError_t = hipError_t;
 using cudaEvent_t = hipEvent_t;
 using cudaMemPool_t = hipMemPool_t;
@@ -36,7 +37,10 @@ using cudaMemPoolProps = hipMemPoolProps;
 using cudaMemAllocationHandleType = hipMemAllocationHandleType;
 using cudaPointerAttributes = hipPointerAttribute_t;
 // macros, enum constant definitions
-constexpr cudaStream_t cudaStreamLegacy = nullptr;
+// NOTE: C++ `constexpr` might cause redefinition errors while #define only results in a warning in this case.
+//       Such redefinitions might happen when a code includes multiple "reverse hipfication" header files 
+//       like this one from a number of other projects. Therefore, we prefer to use #define.
+#define cudaStreamLegacy ((hipStream_t) nullptr)
 #define cudaStreamPerThread hipStreamPerThread
 #define cudaMemcpyDefault hipMemcpyDefault
 #define cudaMemPoolAttrReleaseThreshold hipMemPoolAttrReleaseThreshold
