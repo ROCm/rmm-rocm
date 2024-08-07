@@ -49,7 +49,7 @@
 #include <cstddef>
 #include <limits>
 
-#if CUDART_VERSION >= 11020  // 11.2 introduced cudaMallocAsync
+#if CUDART_VERSION >= 11020 || HIP_VERSION >= 50100000  // 11.2 introduced cudaMallocAsync, HIP 5.1 hipMallocAsync
 #ifndef RMM_DISABLE_CUDA_MALLOC_ASYNC
 #define RMM_CUDA_MALLOC_ASYNC_SUPPORT
 #endif
