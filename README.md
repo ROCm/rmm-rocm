@@ -84,7 +84,7 @@ To install RMM from source, ensure the dependencies are met and follow the steps
 
 - Clone the repository and submodules
 ```bash
-$ git clone --recurse-submodules https://github.com/AMD-AI/rmm.git
+$ git clone --recurse-submodules https://github.com/ROCM/rmm-rocm.git
 $ cd rmm
 ```
 
@@ -94,30 +94,53 @@ $ cd rmm
 $ conda env create --name rmm_dev --file conda/environments/all_rocm_arch-x86_64.yaml
 # activate the environment
 $ conda activate rmm_dev
-# install ROCm dependencies that are not yet distributed via Conda channel
-(rmm_dev) $ python3 -m pip install -r conda/environments/rocm-requirements.txt
 ```
 
-> **Note** (Compiling for AMD GPUs): 
+- Install ROCm dependencies that are not yet distributed via a conda channel. We install HIP Python and Numba HIP via the Github-distributed `numba-hip` package. We select dependencies of Numba HIP that agree with our ROCm installation by providing a parameter `rocm-${ROCM_MAJOR}-${ROCM-MINOR}-${ROCM-PATCH}`
+(example: `rocm-6-1-2`) in square brackets:
+
+```bash
+(rmm_dev) $ pip install --upgrade pip
+# NOTE: Some RMM dependencies are currently distributed via: https://test.pypi.org/simple
+#       We need to specify 'https://test.pypi.org/simple' as additional global extra index URL.
+#       To append the URL and not overwrite what else is specified already, we combine `pip
+#       config set` and `pip config get` as shown below. We further restore the original URLs.
+#
+#       (Note that specifying the `--extra-index-url` command line option does not have
+#       the same effect.)
+(rmm_dev) $ previous_urls=$(pip config get global.extra-index-url)
+(rmm_dev) $ pip config set global.extra-index-url "${previous_urls} https://test.pypi.org/simple"
+(rmm_dev) $ pip install numba-hip[rocm-${ROCM_MAJOR}-${ROCM-MINOR}-${ROCM-PATCH}]@git+https://github.com/rocm/numba-hip.git
+# example: pip install numba-hip[rocm-6-1-2]@git+https://github.com/rocm/numba-hip.git
+(rmm_dev) $ pip config set global.extra-index-url "${previous_urls}" # restore urls
+```
+
+> **Note** (Compiling for AMD GPUs):
 >
-> When compiling for AMD GPUs, we always need to set the environment variable `CXX` before 
-> building to make the Cython build process use a HIP C++ compiler.
-> 
+> When compiling for AMD GPUs, we always need to set the environment variable `CXX` before building so that the Cython build process use a HIP C++ compiler.
+>
 > Example:
-> 
-> `$ export CXX=hipcc`
-> 
+>
+> `(rmm_dev) $ export CXX=hipcc`
+>
+> We further need to provide the location of the ROCm CMake scripts to CMake via the `CMAKE_PREFIX_PATH` CMake or environment variable. We append via the `:` char to not modify configurations performeed by the active Conda environment.
+>
+> Example:
+>
+> `(rmm_dev) $ export CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:/opt/rocm/lib/cmake"`
+>
 
 - Build and install `librmm` using cmake & make.
 
 ```bash
 
-$ export CXX="hipcc"                                # Cython CXX compiler, adjust according to your setup.
-$ mkdir build                                       # make a build directory
-$ cd build                                          # enter the build directory
-$ cmake .. -DCMAKE_INSTALL_PREFIX=/install/path     # configure cmake ... use $CONDA_PREFIX if you're using Anaconda
-$ make -j                                           # compile the library librmm.so ... '-j' will start a parallel job using the number of physical cores available on your system
-$ make install                                      # install the library librmm.so to '/install/path'
+(rmm_dev) $ export CXX="hipcc"                                # Cython CXX compiler, adjust according to your setup.
+(rmm_dev) $ export CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:/opt/rocm/lib/cmake" # ROCm CMake packages
+(rmm_dev) $ mkdir build                                       # make a build directory
+(rmm_dev) $ cd build                                          # enter the build directory
+(rmm_dev) $ cmake .. -DCMAKE_INSTALL_PREFIX=/install/path     # configure cmake ... use $CONDA_PREFIX if you're using Anaconda
+(rmm_dev) $ make -j                                           # compile the library librmm.so ... '-j' will start a parallel job using the number of physical cores available on your system
+(rmm_dev) $ make install                                      # install the library librmm.so to '/install/path'
 ```
 
 - Building and installing `librmm` and `rmm` using build.sh. Build.sh creates build dir at root of
@@ -125,35 +148,60 @@ $ make install                                      # install the library librmm
 
 ```bash
 
-$ export CXX="hipcc"                                # Cython CXX compiler, adjust according to your setup.
-$ ./build.sh -h                                     # Display help and exit
-$ ./build.sh -n librmm                              # Build librmm without installing
-$ ./build.sh -n rmm                                 # Build rmm without installing
-$ ./build.sh -n librmm rmm                          # Build librmm and rmm without installing
-$ ./build.sh librmm rmm                             # Build and install librmm and rmm
+(rmm_dev) $ export CXX="hipcc"                                # Cython CXX compiler, adjust according to your setup.
+(rmm_dev) $ export CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:/opt/rocm/lib/cmake" # ROCm CMake packages
+(rmm_dev) $ ./build.sh -h                                     # Display help and exit
+(rmm_dev) $ ./build.sh -n librmm                              # Build librmm without installing
+(rmm_dev) $ ./build.sh -n rmm                                 # Build rmm without installing
+(rmm_dev) $ ./build.sh -n librmm rmm                          # Build librmm and rmm without installing
+(rmm_dev) $ ./build.sh librmm rmm                             # Build and install librmm and rmm
 ```
+
+> **Note** (Clean before rebuilding):
+>
+> Before rebuilding, it is recommended to remove previous build files.
+> When you are using the `./build.sh` script, this can be accomplished
+> by additionally specifying `clean` (example: `./build.sh clean rmm`).
 
 - To run tests (Optional):
 ```bash
-$ cd build (if you are not already in build directory)
-$ export CXX="hipcc" # Cython CXX compiler, adjust according to your setup.
+(rmm_dev) $ cd build (if you are not already in build directory)
 $ make test
 ```
 
 - Build, install, and test the `rmm` python package, in the `python` folder:
 ```bash
-$ export CXX="hipcc" # Cython CXX compiler, adjust according to your setup.
-$ python setup.py build_ext --inplace
-$ python setup.py install
-$ pytest -v
+(rmm_dev) $ export CXX="hipcc" # Cython CXX compiler, adjust according to your setup.
+(rmm_dev) $ export CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:/opt/rocm/lib/cmake" # ROCm CMake packages
+(rmm_dev) $ python setup.py build_ext --inplace
+(rmm_dev) $ python setup.py install
+(rmm_dev) $ pytest -v
 ```
 
 - Build the `rmm` python package and create a binary wheel, in the `python` folder:
 ```bash
-$ CXX="hipcc" python3 setup.py bdist_wheel
+(rmm_dev) $ export CXX="hipcc" # Cython CXX compiler, adjust according to your setup.
+(rmm_dev) $ export CMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH}:/opt/rocm/lib/cmake" # ROCm CMake packages
+(rmm_dev) $ python3 setup.py bdist_wheel
 ```
 
 Done! You are ready to develop for the RMM OSS project.
+
+### Installing a RMM-ROCm Python wheel
+
+When you install the RMM-ROCm Python wheel, you can again specify the ROCm version of the dependencies via the optional dependency key `rocm-${ROCM_MAJOR}_${ROCM_MINOR}-${ROCM-PATCH}`. Again, you need to specify an extra `pip` index URL to make it possible for `pip` to find some dependencies.
+
+```bash
+$ previous_urls=$(pip config get global.extra-index-url)
+$ pip config set global.extra-index-url "${previous_urls} https://test.pypi.org/simple"
+
+$ pip install ${path_to_wheel}.whl[rocm-${ROCM_MAJOR}_${ROCM_MINOR}-${ROCM-PATCH}]
+# example: pip install ${path_to_wheel}.whl[rocm-6-1-2]
+```
+
+> **WARNING** (RMM-ROCm wheels are binary wheels):
+>
+> Each RMM-ROCm wheel has been built against a particular ROCm version. The ROCm dependency key helps you to install RMM dependencies for this particular ROCm version. Using the wheel with an incompatible ROCm installation or specifying dependencies that are not compatible with the ROCm installation assumed by the RMM wheel, will likely result in issues.
 
 ### Caching third-party dependencies
 
