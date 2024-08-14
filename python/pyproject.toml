@@ -58,6 +58,7 @@ test = [
 # NOTE: If one of the below optional keys is specified, pip will
 #       install a numba-hip version that is compatible with the
 #       respective ROCm version.
+rocm-6-2-0 = ["numba-hip[rocm-6-2-0]@git+https://github.com/ROCm/numba-hip.git"]
 rocm-6-1-2 = ["numba-hip[rocm-6-1-2]@git+https://github.com/ROCm/numba-hip.git"]
 rocm-6-1-0 = ["numba-hip[rocm-6-1-0]@git+https://github.com/ROCm/numba-hip.git"]
 rocm-6-0-0 = ["numba-hip[rocm-6-0-0]@git+https://github.com/ROCm/numba-hip.git"]
